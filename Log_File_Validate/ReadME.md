@@ -29,3 +29,17 @@ To establish a transformative strategy for Continuous Deployment, consider the f
 8. Security and Compliance: Consider security and compliance requirements throughout the Continuous Deployment process. Implement security controls, vulnerability scanning, and code analysis tools to ensure that deployments meet the necessary security standards. Incorporate security testing and compliance checks into the deployment pipeline to identify and address potential vulnerabilities early on.
 
 By incorporating these elements into your transformative strategy for Continuous Deployment, you can establish a robust and efficient deployment process that enables rapid, reliable, and scalable software delivery while maintaining the highest standards of quality, security, and compliance.
+
+
+A multi-tiered application deployment strategy is a way of organizing and deploying applications that consist of multiple interconnected tiers or layers. Each tier represents a different component of the application, such as presentation, business logic, and data storage.
+
+Cross Platform Deployment :- deploying applications that can run on multiple operating systems and platforms, such as Windows, macOS, Linux, iOS, and Android.
+
+
+ plugin ecosystem for application deployment refers to a collection of software plugins or extensions that enhance the capabilities and functionality of a deployment system or platform. These plugins provide additional features, integrations, and customizations to streamline the deployment process and cater to specific deployment requirements. 
+
+No code or low code deployment automation refers to the use of visual interfaces, drag-and-drop functionality, and pre-built components to automate the deployment process without the need for traditional coding or complex scripting. It enables non-technical users or citizen developers to easily configure and deploy applications or workflows with minimal coding knowledge. 
+
+RBAC (Role-Based Access Control) plays a crucial role in application deployment by providing a granular and secure approach to managing access and permissions within the deployment process. RBAC ensures that users and entities have the appropriate permissions to perform their tasks while minimizing potential security risks.
+ 
+

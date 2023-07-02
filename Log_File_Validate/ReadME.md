@@ -41,5 +41,50 @@ Cross Platform Deployment :- deploying applications that can run on multiple ope
 No code or low code deployment automation refers to the use of visual interfaces, drag-and-drop functionality, and pre-built components to automate the deployment process without the need for traditional coding or complex scripting. It enables non-technical users or citizen developers to easily configure and deploy applications or workflows with minimal coding knowledge. 
 
 RBAC (Role-Based Access Control) plays a crucial role in application deployment by providing a granular and secure approach to managing access and permissions within the deployment process. RBAC ensures that users and entities have the appropriate permissions to perform their tasks while minimizing potential security risks.
+
+
+ Today, I am going to present Anish's case as a highly deserving candidate for a promotional opportunity within our organization.
+Anish has consistently demonstrated exceptional skills, dedication, and the drive to achieve outstanding results. 
+With this presentation, we will showcase his qualifications, achievements, and potential to excel in an elevated role.
+
+1. Proven Track Record of Excellence:
+Anish has a track record of consistently delivering exceptional results in his current role.
+ He has worked delivering an all round solution in DevOps & Cloud Engineering tasks. Few of his key contributions are in 
+ Gitlab CI/CD Templates, Kubernetes Operators, HPA, Migration from DIND to Kaniko, Architecture of setting up PowerBI dashboards using Cloud storages,
+ Static Code analaysis implementation for Kubernetes resources using Kube-Score, Gitlab Pipeline MOnitoring, remediation of violations with regards to AZ policies. 
+ Anish's optimistic perspective with his POC (ArgoCD for CD, AppDynamics Cluster Agent) about the tools & the platform has really helped Neo Crew in many ways.   
  
+ 
+ 
+2. Leadership and Team Collaboration:
+Throughout his tenure, Anish has shown remarkable leadership skills and the ability to collaborate effectively with colleagues at all levels.
+Anish had successful stint as temporary Scrum Master for more than 6 sprints with out drop in pod's velocity is one key example. If we talk about colloboration, his mentoring to GTP's as well his collobration with
+other pods (Dev Support, Platform, Search, Data) has really been fruitful to all. He has received 32 kudos (including Zoe Evans) in one year out of which 14 of them were for Colloboration speaks the case here.
+ His natural ability to motivate and inspire others has positively impacted pod dynamics and contributed to overall success.
+
+3. Innovation & Problem-Solving Skills:
+In an ever-evolving business landscape, Anish has demonstrated exceptional adaptability and the ability to navigate complex challenges with ease.
+ His strategic thinking and ability to identify innovative solutions have contributed significantly to process improvements and operational efficiencies. Few of them are - Aligning Kube-Score with AZ policies, Gitlab Pipeline Monitoring. Helm Chart Repository Pipeline redesign.  
+ He has also helped a lot of pods with their cloud migration activities in various divisions like IB, AM, GF.  
+
+4. Commitment to Learning and Sharing:
+Anish is dedicated to continuously seeking opportunities to enhance his skills and knowledge. His journey on Gold Certified Engineer is strong statement of this.
+ He has actively pursued certifications on Gitlab, Azure & Kubernetes to stay updated with industry trends and best practices. With regards to Sharing, Anish has presented a 
+ topic related to Static code analysis of Kuberentes resources in Digital Week 2022, Continous Deployment using GitOps as well as using ArgoCD & Pipeline Observility at India's Dev Community
+ Platform. Anish has also written many blogs and for one his blog was recognised as third best blog to read in Blogathon contest organised by Dev Community India.
+ This all shows his commitment to self-improvement which positions him as an invaluable asset to our organization's growth and success.
+
+5. Contribution for Community:
+Anish has also managed to prioritized his work towards social & as well as cultural communities. He participated in afforstation drive last year and also participating in 
+Career guidance for students in CSR activities. Now, when it comes to cultural communities, He is a core member of Dev as well DevOps community India and have been a strong 
+promoter of these communities by his work and behavior. 
+
+Conclusion:
+In conclusion, Anish embodies the qualities of an outstanding candidate for a promotional opportunity within our organization. 
+His proven track record of excellence, leadership skills, adaptability, commitment to growth, and CSR activities make them an ideal choice for an elevated role.
+ Promoting Anish will not only recognize his hard work and accomplishments but also provide our organization with a dynamic and capable candidate who will contribute to 
+ our continued success.
+
+I would request you all to kindly consider the merits of Anish's qualifications and the potential he possess to thrive in an advanced role within our organization.
+ Thank you for your time and attention.
 

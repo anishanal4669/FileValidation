@@ -309,3 +309,73 @@ a) "git merge" preserves commit history, while "git rebase" discards it.
 b) "git merge" integrates changes from another branch as new commits, while "git rebase" rewrites commit history.
 c) "git merge" is used for remote repositories, while "git rebase" is used for local repositories.
 d) "git merge" only works with linear history, while "git rebase" handles complex branching structures.
+
+
+
+Certainly! Here are multiple-choice questions (MCQs) related to various Git commands:
+
+**Git Cherry-Pick:**
+
+1. What does "git cherry-pick" do?
+   a) Deletes a branch
+   b) Reverts a commit
+   c) Picks a random commit from the repository
+   d) Applies a specific commit from one branch to another
+
+**Git Tag:**
+
+2. What is a Git tag used for?
+   a) Renaming a branch
+   b) Tracking changes in a remote repository
+   c) Storing a reference to a specific commit
+   d) Merging two branches
+
+**Git Reset:**
+
+3. What does "git reset" do?
+   a) Discards all changes in the repository
+   b) Deletes a remote branch
+   c) Undoes the most recent commit while keeping changes staged
+   d) Merges changes from one branch into another
+
+**Git Revert:**
+
+4. How does "git revert" differ from "git reset"?
+   a) "git revert" discards changes, while "git reset" undoes commits.
+   b) "git reset" discards changes, while "git revert" undoes commits.
+   c) "git reset" undoes commits while keeping changes staged, while "git revert" creates a new commit to undo changes.
+   d) "git reset" creates a new commit to undo changes, while "git revert" discards changes.
+
+**Git Stash:**
+
+5. What is the purpose of "git stash"?
+   a) To permanently delete changes
+   b) To discard a branch
+   c) To temporarily save changes and revert to a clean state
+   d) To merge changes from a remote repository
+
+**Git Bisect:**
+
+6. What is the purpose of "git bisect"?
+   a) To merge two branches
+   b) To navigate through commit history
+   c) To compare code between different branches
+   d) To find the commit that introduced a bug using binary search
+
+**Git Reflog:**
+
+7. What does "git reflog" show?
+   a) A list of available remote repositories
+   b) A summary of the latest commit
+   c) A history of changes to references (such as branches and HEAD)
+   d) A detailed log of all commits in the repository
+
+**Answers:**
+
+1. d) Applies a specific commit from one branch to another
+2. c) Storing a reference to a specific commit
+3. c) Undoes the most recent commit while keeping changes staged
+4. c) "git reset" undoes commits while keeping changes staged, while "git revert" creates a new commit to undo changes.
+5. c) To temporarily save changes and revert to a clean state
+6. d) To find the commit that introduced a bug using binary search
+7. c) A history of changes to references (such as branches and HEAD)

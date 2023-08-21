@@ -304,4 +304,8 @@ b) To synchronize local and remote repositories
 
 
 
-
+What is the main difference between "git merge" and "git rebase"?
+a) "git merge" preserves commit history, while "git rebase" discards it.
+b) "git merge" integrates changes from another branch as new commits, while "git rebase" rewrites commit history.
+c) "git merge" is used for remote repositories, while "git rebase" is used for local repositories.
+d) "git merge" only works with linear history, while "git rebase" handles complex branching structures.

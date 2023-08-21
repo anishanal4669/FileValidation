@@ -379,3 +379,9 @@ Certainly! Here are multiple-choice questions (MCQs) related to various Git comm
 5. c) To temporarily save changes and revert to a clean state
 6. d) To find the commit that introduced a bug using binary search
 7. c) A history of changes to references (such as branches and HEAD)
+
+What is a "fork" in the context of Git and version control?
+a) A command to create a new branch
+b) A way to undo changes in a repository
+c) A copy of a repository hosted on your GitHub account
+d) A feature for merging changes between branches

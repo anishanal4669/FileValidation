@@ -1,25 +1,71 @@
 
-// use the current context in kubeconfig
-var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
+package main
 
-	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+import (
+	"encoding/json"
+	"fmt"
+
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+)
+
+// Rule represents a single alert rule within a PrometheusRule
+type Rule struct {
+	Expr       string             `json:"expr"`
+	For        v1.Duration        `json:"for,omitempty"`
+	Labels     map[string]string  `json:"labels,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
+func main() {
+	// Replace with your in-cluster or out-of-cluster config
+	config, err := restclient.InClusterConfig()
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
+
+	// Create a Kubernetes clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		fmt.Printf("Error creating clientset: %v\n", err)
-		return
+		panic(err)
 	}
 
+	// Define the namespace where you want to get PrometheusRule (replace with your namespace)
+	namespace := "default"
 
+	// Get the PrometheusRule object
+	prometheusRule, err := clientset.MonitoringV1().PrometheusRules(namespace).Get("kube-pod-crashlooping", v1.GetOptions{})
+	if err != nil {
+		panic(err)
+	}
+
+	// Extract and print the rules
+	fmt.Println("Rules:")
+	for _, group := range prometheusRule.Spec.Groups {
+		for _, rule := range group.Rules {
+			var extractedRule Rule
+			err := json.Unmarshal([]byte(rule.Expr), &extractedRule.Expr)
+			if err != nil {
+				fmt.Println("Error parsing rule expression:", err)
+				continue
+			}
+			extractedRule.For = rule.For
+			extractedRule.Labels = rule.Labels
+			extractedRule.Annotations = rule.Annotations
+			fmt.Printf("  - expr: %s\n", extractedRule.Expr)
+			fmt.Printf("    for: %s\n", extractedRule.For)
+			fmt.Println("    labels:")
+			for k, v := range extractedRule.Labels {
+				fmt.Printf("      %s: %s\n", k, v)
+			}
+			fmt.Println("    annotations:")
+			for k, v := range extractedRule.Annotations {
+				fmt.Printf("      %s: %s\n", k, v)
+			}
+		}
+	}
+}
 
 # FileValidation
 Generic Framework to compare different types of files

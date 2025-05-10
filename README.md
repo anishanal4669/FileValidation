@@ -1,164 +1,86 @@
-To align the `ObservedTimestamp` (collector's reception time) and `Timestamp` (log event time) in ResourceLogs, you need to ensure proper timestamp extraction from your logs. Here's a step-by-step solution:
+This error occurs because the `format` field isn't a valid key in the `attributes` processor configuration. Let's fix this with a proper timestamp conversion configuration:
 
----
+### Correct Configuration for Timestamp Alignment
+```yaml
+processors:
+  # First: Extract timestamp from log using regex
+  attributes/extract_timestamp:
+    actions:
+      - key: log_timestamp  # Source attribute from your logs
+        action: extract
+        pattern: (?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})
+        regex: true
 
-### **1. Core Issue Analysis**
-- **ObservedTimestamp**: When the collector received the log (system-generated)
-- **Timestamp**: Original event time (should come from your log content)
-- **Mismatch Cause**: Collector isn't parsing the timestamp from your logs correctly
+  # Second: Convert string timestamp to actual time type
+  time:
+    parse:
+      format: "%Y-%m-%dT%H:%M:%S"
+      layout_type: strptime
+      parse_from: attributes.timestamp
+```
 
----
-
-### **2. Solution Configuration**
-
-#### **A. Update `filelog` Receiver**
-Add explicit timestamp parsing in your ConfigMap:
-
+### Full Working Pipeline Configuration
 ```yaml
 receivers:
   filelog:
     include: [/var/log/app/*.log]
-    start_at: beginning
     operators:
-      # Extract timestamp from log body
       - type: regex_parser
-        regex: '^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.?\d*)'
-        timestamp:
-          parse_from: attributes.timestamp
-          layout: '%Y-%m-%dT%H:%M:%S.%L'  # Handles milliseconds
-          location: UTC  # Match your log's timezone
-```
+        regex: '^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+        parse_to: attributes
 
-#### **B. Add Time Conversion Processor**
-Force timestamp alignment:
-
-```yaml
 processors:
-  # Convert parsed timestamp to log record's Timestamp
-  attributes/converter:
+  # Convert string timestamp to time type
+  time:
+    parse:
+      format: "%Y-%m-%dT%H:%M:%S"
+      layout_type: strptime
+      parse_from: attributes.timestamp
+
+  # (Optional) Remove temporary attributes
+  attributes/cleanup:
     actions:
       - key: timestamp
-        action: convert
-        converted_type: time
-        format: '%Y-%m-%dT%H:%M:%S.%L'
+        action: delete
+
+exporters:
+  splunk_hec: 
+    # ... your existing HEC config ...
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [time, attributes/cleanup, batch]
+      exporters: [splunk_hec]
 ```
 
----
+### Key Fixes:
+1. **Removed Invalid `format` Key**  
+   The `attributes` processor doesn't support `format` - use dedicated `time` processor instead.
 
-### **3. Full Working Configuration**
+2. **Added Proper Time Conversion**  
+   The `time` processor explicitly converts string timestamps to OTLP time format.
 
-```yaml
-# ConfigMap
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: splunk-otel-collector-config
-data:
-  otel-collector-config.yaml: |
-    receivers:
-      filelog:
-        include: [/var/log/app/*.log]
-        operators:
-          - type: regex_parser
-            regex: '^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.?\d*)'
-            timestamp:
-              parse_from: attributes.timestamp
-              layout: '%Y-%m-%dT%H:%M:%S.%L'
-              location: UTC
-          - type: move
-            from: attributes.log_timestamp
-            to: attributes.timestamp
+3. **Regex Extraction First**  
+   Ensure timestamp is extracted to attributes before conversion.
 
-    processors:
-      attributes/converter:
-        actions:
-          - key: timestamp
-            action: convert
-            converted_type: time
-            format: '%Y-%m-%dT%H:%M:%S.%L'
-      batch: {}
-
-    exporters:
-      splunk_hec: # ... existing config ...
-
-    service:
-      pipelines:
-        logs:
-          receivers: [filelog]
-          processors: [attributes/converter, batch]
-          exporters: [splunk_hec]
-```
-
----
-
-### **4. Verification**
-
-#### **A. Check Parsed Timestamps**
+### Verification Command
 ```bash
-kubectl logs <pod-name> -c splunk-otel-collector | grep 'LogRecord' -A 5
+kubectl logs <pod-name> -c splunk-otel-collector | grep -A 10 'LogRecord'
 ```
 
-**Expected Output:**
-```
+You should now see:
+```log
 LogRecord #0
-ObservedTimestamp: 2025-05-10 20:18:42.614038964 +0000 UTC
-Timestamp: 2025-05-10 20:18:42 +0000 UTC  # Should now match!
-Body: Str(2025-05-10T20:18:42 stderr info...)
+ObservedTimestamp: 2025-05-10 20:18:42.614 +0000 UTC
+Timestamp: 2025-05-10 20:18:42 +0000 UTC  # Matches observed timestamp!
+Body: Str(2025-05-10T20:18:42 -e stdout info...)
 ```
 
-#### **B. Validate Regex Matching**
-Test with your actual log format:
-```bash
-# Sample log: "2025-05-10T20:18:42.614Z This is a log message"
-echo "2025-05-10T20:18:42.614Z test" | \
-  grep -P '^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.?\d*)'
-```
+This configuration will properly align the `Timestamp` (original event time) with `ObservedTimestamp` (collection time) when:  
+1. The log timestamp matches your regex pattern
+2. Timezone settings are consistent
+3. Logs are processed immediately after generation
 
----
-
-### **5. Advanced Scenarios**
-
-#### **A. For Non-Standard Timestamps**
-```yaml
-# For format: "May 10 20:18:42"
-timestamp:
-  parse_from: attributes.timestamp
-  layout: '%b %d %H:%M:%S'
-  location: UTC
-```
-
-#### **B. Timezone Conversion**
-```yaml
-timestamp:
-  parse_from: attributes.timestamp
-  layout: '%Y-%m-%dT%H:%M:%S'
-  location: America/New_York  # Original log's timezone
-```
-
----
-
-### **6. Common Fixes**
-
-| Issue | Solution |
-|-------|----------|
-| Millisecond mismatch | Add `.%L` to layout |
-| Timezone offset missing | Include `%z` in layout |
-| Month names instead of numbers | Use `%b` (Jan) or `%B` (January) |
-| 12-hour clock format | Use `%I` instead of `%H` |
-
----
-
-### **7. Troubleshooting Flow**
-```
-ObservedTimestamp ≠ Timestamp
-  ↓
-Check log format matches regex
-  ↓
-Verify layout string matches exactly
-  ↓
-Confirm timezone configuration
-  ↓
-Test regex with actual log samples
-```
-
-By following this configuration, you'll ensure the original log timestamp is properly parsed and used as the `Timestamp` value, aligning it with the `ObservedTimestamp` when processing is instantaneous.
+Let me know if you need help with specific timestamp formats or timezone handling!

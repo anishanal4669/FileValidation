@@ -105,3 +105,47 @@ func calculateAge(creationTime metav1.Time) string {
 	duration := now.Sub(creationTime.Time)
 	return fmt.Sprint(duration)
 }
+
+
+
+
+
+
+receivers:
+  filelog:
+    include:
+      - /path/to/your/logs/*.log
+    start_at: beginning
+    operators:
+      - type: regex_parser
+        regex: '^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\s+(?P<level>\w+)\s+(?P<tag>\w+)\s+(?P<message>.+)$'
+        timestamp:
+          parse_from: timestamp
+          layout: '%Y-%m-%dT%H:%M:%S'
+        severity:
+          parse_from: level
+
+processors:
+  batch:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 500
+    spike_limit_mib: 100
+
+exporters:
+  splunk_hec:
+    token: "${SPLUNK_HEC_TOKEN}"
+    endpoint: "${SPLUNK_HEC_URL}"
+    source: "otel-collector"
+    sourcetype: "custom:logs"
+    index: "main"
+    tls:
+      insecure_skip_verify: false
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [batch, memory_limiter]
+      exporters: [splunk_hec]
+

@@ -1,86 +1,161 @@
-This error occurs because the `format` field isn't a valid key in the `attributes` processor configuration. Let's fix this with a proper timestamp conversion configuration:
+#!/usr/bin/env python3
 
-### Correct Configuration for Timestamp Alignment
-```yaml
-processors:
-  # First: Extract timestamp from log using regex
-  attributes/extract_timestamp:
-    actions:
-      - key: log_timestamp  # Source attribute from your logs
-        action: extract
-        pattern: (?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})
-        regex: true
+import base64, hashlib, os, urllib.parse, json, argparse
+import requests
+from playwright.sync_api import sync_playwright
 
-  # Second: Convert string timestamp to actual time type
-  time:
-    parse:
-      format: "%Y-%m-%dT%H:%M:%S"
-      layout_type: strptime
-      parse_from: attributes.timestamp
-```
+# =========================================
+# PKCE Utilities
+# =========================================
+def generate_pkce():
+    verifier = base64.urlsafe_b64encode(os.urandom(40)).decode().rstrip("=")
+    challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(verifier.encode()).digest()
+    ).decode().rstrip("=")
+    return verifier, challenge
 
-### Full Working Pipeline Configuration
-```yaml
-receivers:
-  filelog:
-    include: [/var/log/app/*.log]
-    operators:
-      - type: regex_parser
-        regex: '^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
-        parse_to: attributes
 
-processors:
-  # Convert string timestamp to time type
-  time:
-    parse:
-      format: "%Y-%m-%dT%H:%M:%S"
-      layout_type: strptime
-      parse_from: attributes.timestamp
+def decode_jwt(token):
+    payload_part = token.split(".")[1]
+    padded = payload_part + "==="[: (4 - len(payload_part) % 4) % 4]
+    return json.loads(base64.urlsafe_b64decode(padded))
 
-  # (Optional) Remove temporary attributes
-  attributes/cleanup:
-    actions:
-      - key: timestamp
-        action: delete
 
-exporters:
-  splunk_hec: 
-    # ... your existing HEC config ...
+# =========================================
+# Playwright Automation to Capture Auth Code
+# =========================================
+def get_auth_code(auth_url, redirect_uri):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
+        context = browser.new_context()
 
-service:
-  pipelines:
-    logs:
-      receivers: [filelog]
-      processors: [time, attributes/cleanup, batch]
-      exporters: [splunk_hec]
-```
+        page = context.new_page()
 
-### Key Fixes:
-1. **Removed Invalid `format` Key**  
-   The `attributes` processor doesn't support `format` - use dedicated `time` processor instead.
+        auth_code_holder = {"code": None}
 
-2. **Added Proper Time Conversion**  
-   The `time` processor explicitly converts string timestamps to OTLP time format.
+        # Capture the final redirect URL containing the ?code=
+        def capture_request(request):
+            if request.url.startswith(redirect_uri) and "code=" in request.url:
+                auth_code_holder["code"] = urllib.parse.parse_qs(
+                    urllib.parse.urlparse(request.url).query
+                )["code"][0]
 
-3. **Regex Extraction First**  
-   Ensure timestamp is extracted to attributes before conversion.
+        context.on("request", capture_request)
 
-### Verification Command
-```bash
-kubectl logs <pod-name> -c splunk-otel-collector | grep -A 10 'LogRecord'
-```
+        print("\n🔗 Opening browser for Azure login...\n")
+        page.goto(auth_url)
 
-You should now see:
-```log
-LogRecord #0
-ObservedTimestamp: 2025-05-10 20:18:42.614 +0000 UTC
-Timestamp: 2025-05-10 20:18:42 +0000 UTC  # Matches observed timestamp!
-Body: Str(2025-05-10T20:18:42 -e stdout info...)
-```
+        # Wait until we capture the authorization code
+        while auth_code_holder["code"] is None:
+            page.wait_for_timeout(200)
 
-This configuration will properly align the `Timestamp` (original event time) with `ObservedTimestamp` (collection time) when:  
-1. The log timestamp matches your regex pattern
-2. Timezone settings are consistent
-3. Logs are processed immediately after generation
+        browser.close()
+        return auth_code_holder["code"]
 
-Let me know if you need help with specific timestamp formats or timezone handling!
+
+# =========================================
+# Exchange Authorization Code for Access Token
+# =========================================
+def get_access_token(tenant, client, redirect, verifier, code):
+    token_url = f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token"
+
+    data = {
+        "client_id": client,
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": redirect,
+        "code_verifier": verifier,
+    }
+
+    resp = requests.post(token_url, data=data).json()
+    if "access_token" not in resp:
+        raise Exception(f"Token request failed: {resp}")
+
+    return resp["access_token"]
+
+
+# =========================================
+# Call APIM with Token
+# =========================================
+def call_apim(apim_url, token):
+    headers = {"Authorization": f"Bearer {token}"}
+    r = requests.get(apim_url, headers=headers)
+    print(f"\n🌐 APIM Response: {r.status_code}\n{r.text}\n")
+    return r
+
+
+# =========================================
+# CLI Logic
+# =========================================
+def main():
+    parser = argparse.ArgumentParser(
+        description="CLI Tool to authenticate via Azure AD (PKCE) and call an APIM-secured API"
+    )
+
+    parser.add_argument("--tenant", help="Azure Tenant ID")
+    parser.add_argument("--client", help="Client (App Registration) ID")
+    parser.add_argument("--server", help="Server/API App ID")
+    parser.add_argument("--redirect", help="Redirect URI")
+    parser.add_argument("--scope", help="Scope name (e.g. User.Api.Read)")
+    parser.add_argument("--apim", help="APIM endpoint URL")
+
+    args = parser.parse_args()
+
+    # Interactive fallback
+    tenant = args.tenant or input("Tenant ID: ").strip()
+    client = args.client or input("Client App ID: ").strip()
+    server = args.server or input("Server/API App ID: ").strip()
+    redirect = args.redirect or input("Redirect URI: ").strip()
+    scope = args.scope or input("Scope name (e.g., User.Api.Read): ").strip()
+    apim_url = args.apim or input("APIM endpoint URL: ").strip()
+
+    # PKCE Generation
+    verifier, challenge = generate_pkce()
+    print("\n🔐 Generated PKCE")
+    print("Verifier:", verifier)
+    print("Challenge:", challenge)
+
+    # Build Authorization URL
+    full_scope = f"api://{server}/{scope} openid profile offline_access"
+    encoded_redirect = urllib.parse.quote(redirect)
+
+    auth_url = (
+        f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize?"
+        f"client_id={client}"
+        f"&response_type=code"
+        f"&redirect_uri={encoded_redirect}"
+        f"&response_mode=query"
+        f"&scope={urllib.parse.quote(full_scope)}"
+        f"&code_challenge={challenge}"
+        f"&code_challenge_method=S256"
+    )
+
+    print("\n🧭 Authorization URL:")
+    print(auth_url)
+
+    # Step 1: Acquire Authorization Code
+    code = get_auth_code(auth_url, redirect)
+    print("\n✔ Captured Authorization Code:", code)
+
+    # Step 2: Exchange Code for Token
+    token = get_access_token(tenant, client, redirect, verifier, code)
+
+    print("\n🎫 Access Token (JWT):\n")
+    print(token)
+
+    with open("jwt_token.txt", "w") as f:
+        f.write(token)
+
+    print("\n💾 Saved token to jwt_token.txt")
+
+    # Step 3: Decode JWT
+    decoded = decode_jwt(token)
+    print("\n🧩 Decoded JWT:")
+    print(json.dumps(decoded, indent=2))
+
+    # Step 4: Call APIM
+    call_apim(apim_url, token)
+
+
+if __name__ == "__main__":
+    main()
